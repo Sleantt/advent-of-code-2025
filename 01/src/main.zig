@@ -26,35 +26,39 @@ fn readData(allocator: std.mem.Allocator) ![]const u8 {
     const stat = try file.stat();
     return try file.readToEndAlloc(allocator, stat.size);
 }
-fn turnDial(move: []const u8, current: *i32, zeroes: *u32) !void {
-    if (move.len == 0) return;
-    var offset = try std.fmt.parseInt(i32, move[1..], 10);
-    if (move[0] == 'L') {
-        offset = -offset;
-    }
+fn turnDial(offset: i32, current: *i32, zeroes: *u32) !void {
     current.* = @mod(current.* + offset, base);
     if (current.* == 0) {
         zeroes.* += 1;
     }
 }
 
-fn turnDial2(move: []const u8, current: *i32, zeroes: *u32) !void {
-    if (move.len == 0) return;
-    var curr = current.*;
-    var offset = try std.fmt.parseInt(i32, move[1..], 10);
-    if (move[0] == 'L') {
-        offset = -offset;
+fn naive(offset: i32, current: *i32, zeroes: *u32) !void {
+    var delta: i32 = 1;
+    if (offset < 0) {
+        delta = -delta;
     }
-
-    curr = curr + offset;
-    const loops = @divFloor(@abs(offset), base);
+    for (0..@as(usize, @intCast(@abs(offset)))) |_| {
+        current.* = @mod(current.* + delta, base);
+        if (current.* == 0) {
+            zeroes.* += 1;
+        }
+    }
+}
+fn turnDial2(offset: i32, current: *i32, zeroes: *u32) !void {
+    var off = offset;
+    const loops: u32 = @divFloor(@as(u32, @intCast(@abs(offset))), base);
     zeroes.* += loops;
+    off -= @as(i32, @intCast(loops)) * base;
 
-    std.debug.print("[{}, {}, {}]  ", .{ curr, offset, @divFloor(@abs(offset), base) });
-    if (loops == 0 and (curr < 0 or curr >= base)) {
+    std.debug.print("Zeroes Before : {}\n", .{zeroes.*});
+    const newValue = current.* + off;
+    if (newValue < 0 or newValue >= base) {
         zeroes.* += 1;
     }
-    current.* = @mod(curr, base);
+    current.* = @mod(newValue, base);
+
+    std.debug.print("Zeroes After : {}\n", .{zeroes.*});
 }
 
 fn solve(data: []const u8) !void {
@@ -64,9 +68,16 @@ fn solve(data: []const u8) !void {
     var currentSecond: i32 = 50;
     var it = std.mem.splitScalar(u8, data, '\n');
     while (it.next()) |move| {
-        try turnDial(move, &currentFirst, &zeroesFirst);
-        try turnDial2(move, &currentSecond, &zeroesSecond);
-        std.debug.print("Current {}/{} ({s}) | Zeroes : {}/{}\n", .{ currentFirst, currentSecond, move, zeroesFirst, zeroesSecond });
+        if (move.len == 0) continue;
+        var offset = try std.fmt.parseInt(i32, move[1..], 10);
+        if (move[0] == 'L') {
+            offset = -offset;
+        }
+        try naive(offset, &currentFirst, &zeroesFirst);
+        try turnDial2(offset, &currentSecond, &zeroesSecond);
+        if (zeroesFirst != zeroesSecond) {
+            std.debug.print("Current {}/{} ({s}) | Zeroes : {}/{}\n", .{ currentFirst, currentSecond, move, zeroesFirst, zeroesSecond });
+        }
     }
     std.debug.print("Zeroes : {}\n", .{zeroesFirst});
     std.debug.print("Zeroes : {}\n", .{zeroesSecond});

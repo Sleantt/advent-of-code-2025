@@ -28,6 +28,10 @@ pub fn build(b: *std.Build) void {
     // to our consumers. We must give it a name because a Zig package can expose
     // multiple modules and consumers will need to be able to specify which
     // module they want to access.
+    const qp_engine = b.dependency("qpEngine", .{
+        .target = target,
+        .optimize = optimize,
+    });
     const mod = b.addModule("_02", .{
         // The root source file is the "entry point" of this module. Users of
         // this module will only be able to access public declarations contained
@@ -83,8 +87,8 @@ pub fn build(b: *std.Build) void {
         }),
     });
 
-    // This declares intent for the executable to be installed into the
-    // install prefix when running `zig build` (i.e. when executing the default
+    // This declares intent
+    exe.root_module.addImport("qpEngine", qp_engine.module("qpEngine")); // install prefix when running `zig build` (i.e. when executing the default
     // step). By default the install prefix is `zig-out/` but can be overridden
     // by passing `--prefix` or `-p`.
     b.installArtifact(exe);
