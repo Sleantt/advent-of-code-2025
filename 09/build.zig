@@ -88,7 +88,8 @@ pub fn build(b: *std.Build) void {
     // step). By default the install prefix is `zig-out/` but can be overridden
     // by passing `--prefix` or `-p`.
     b.installArtifact(exe);
-
+    const ziglangSet = b.dependency("ziglangSet", .{});
+    exe.root_module.addImport("ziglangSet", ziglangSet.module("ziglangSet"));
     // This creates a top level step. Top level steps have a name and can be
     // invoked by name when running `zig build` (e.g. `zig build run`).
     // This will evaluate the `run` step rather than the default step.
